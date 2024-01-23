@@ -1,0 +1,8 @@
+version: '3.9'
+services:
+  palworld-ctl:
+    build: .
+    restart: always
+    environment:
+      - RCON_PASS=test
+      - RCON_ADDRESS=test2  
