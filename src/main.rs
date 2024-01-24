@@ -2,9 +2,8 @@ use rcon_client::{AuthRequest, RCONClient, RCONConfig, RCONError, RCONRequest};
 use sys_info::mem_info;
 
 fn run(address: String, password: String) -> Result<(), RCONError> {
-    println!("{}, {}", address, password);
     if let Ok(usage) = mem_info() {
-        if usage.free < 900000 || usage.swap_free < 2000000 {
+        if usage.free < 900_000 || usage.swap_free < 2_000_000 {
             println!("Less than 900mb");
             let mut client = RCONClient::new(RCONConfig {
                 url: address,
@@ -52,29 +51,10 @@ fn check_player_num(client: &mut RCONClient) -> Result<usize, RCONError> {
 }
 
 fn shutdown_server(client: &mut RCONClient, time: &str) -> Result<(), RCONError> {
-    let cmd = format!(
-        "Shutdown {} 'Neustart, weil wir keinen Speicher haben'",
-        time
-    );
+    let cmd = format!("Shutdown {} Neustart", time);
     let resp = client.execute(RCONRequest::new(cmd))?;
 
     println!("{}", resp.body);
-    Ok(())
-}
-
-fn test_check_player_num(address: String, password: String) -> Result<(), RCONError> {
-    let mut client = RCONClient::new(RCONConfig {
-        url: address,
-        // Optional
-        read_timeout: Some(13),
-        write_timeout: Some(37),
-    })?;
-
-    let _ = client.auth(AuthRequest::new(password))?;
-
-    let player_num = check_player_num(&mut client)?;
-    println!("Player num {}", player_num);
-
     Ok(())
 }
 
@@ -90,17 +70,9 @@ fn main() -> Result<(), RCONError> {
         .trim()
         .to_string();
 
-    println!("{} {}", address, password);
-
     if let Ok(usage) = mem_info() {
-        println!("{:#?}", usage);
+        println!("Free memory: {}", usage.free);
     }
 
-    let x = test_check_player_num(address, password)?;
-
-    println!("player nums {:#?}", x);
-
-    //task::block_on(run(address.as_str(), password.as_str()))
-
-    Ok(())
+    run(address, password)
 }
