@@ -13,19 +13,21 @@ RUN apt-get update \
     && which cron \
     && rm -rf /etc/cron.*/
 
-COPY cronjob /etc/cron.d/hello-cron
+COPY cronjob /etc/crontab
 
-RUN chmod 0644 /etc/cron.d/hello-cron
+RUN chmod 0644 /etc/crontab
 
 # Apply cron job
-RUN crontab /etc/cron.d/hello-cron
+RUN crontab /etc/crontab
 
-RUN touch /var/log/cron.log
 
 COPY --from=builder /palworld/target/release/palworld /usr/local/bin/palworld
 
 ENV RCON_ADDRESS=test
 ENV RCON_PASS=test
 
+COPY entrypoint.sh /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
 
 CMD ["cron","-f", "-L", "2"]

@@ -1,1 +1,1 @@
-* * * * * root /usr/local/bin/palworld $RCON_ADDRESS $RCON_PASS > /proc/1/fd/1 2>/proc/1/fd/2
+*/5 * * * * /usr/local/bin/palworld ${RCON_ADDRESS} ${RCON_PASS} > /proc/1/fd/1 2>/proc/1/fd/2
