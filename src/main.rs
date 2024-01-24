@@ -64,13 +64,13 @@ fn shutdown_server(client: &mut RCONClient, time: &str) -> Result<(), RCONError>
 
 fn test_check_player_num(address: String, password: String) -> Result<(), RCONError> {
     let mut client = RCONClient::new(RCONConfig {
-        url: "donkey-engine.host".to_string(),
+        url: address,
         // Optional
         read_timeout: Some(13),
         write_timeout: Some(37),
     })?;
 
-    let auth_result = client.auth(AuthRequest::new(password))?;
+    let _ = client.auth(AuthRequest::new(password))?;
 
     let player_num = check_player_num(&mut client)?;
     println!("Player num {}", player_num);
