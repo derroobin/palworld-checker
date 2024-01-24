@@ -1,7 +1,6 @@
 use async_std::task;
 use rcon::{AsyncStdStream, Connection, Error};
 use sys_info::mem_info;
-use tokio_cron_scheduler::{Job, JobScheduler, JobSchedulerError};
 
 async fn run(address: &str, password: &str) -> Result<(), Error> {
     println!("{}, {}", address, password);
@@ -59,27 +58,30 @@ async fn shutdown_server(conn: &mut Connection<AsyncStdStream>, time: &str) -> R
     Ok(())
 }
 
-#[tokio::main]
-async fn main() -> Result<(), JobSchedulerError> {
-    let mut sched = JobScheduler::new().await?;
-    let address = std::env::args().nth(1).expect("no address given");
-    let password: String = std::env::args().nth(2).expect("no password given");
-
-    sched
-        .add(Job::new("11 */10 * * * *", move |_uuid, _l| {
-            let _ = task::block_on(run(address.as_str(), password.as_str()));
-        })?)
+async fn test_check_player_num(address: &str, password: &str) -> Result<(), Error> {
+    let mut conn = <Connection<AsyncStdStream>>::builder()
+        .connect(address, password)
         .await?;
 
-    // Add code to be run during/after shutdown
-    sched.set_shutdown_handler(Box::new(|| {
-        Box::pin(async move {
-            println!("Shut down done");
-        })
-    }));
+    let player_num = check_player_num(&mut conn).await?;
 
-    sched.start().await?;
-    tokio::time::sleep(core::time::Duration::from_secs(1200)).await;
+    println!("Player num {}", player_num);
+
+    Ok(())
+}
+
+fn main() -> Result<(), Error> {
+    let address = std::env::args().nth(1).expect("no address given");
+    let password = std::env::args().nth(2).expect("no password given");
+
+    let x = task::block_on(test_check_player_num(address.as_str(), password.as_str()));
+
+    if let Ok(usage) = mem_info() {
+        println!("{:#?}", usage);
+    }
+    println!("{:#?}", x);
+
+    //task::block_on(run(address.as_str(), password.as_str()))
 
     Ok(())
 }
