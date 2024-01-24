@@ -1,6 +1,6 @@
 #!/bin/sh
 
-env >> /etc/environment
+printenv | grep -v "no_proxy" >> /etc/environment
 
 # execute CMD
 echo "$@"
