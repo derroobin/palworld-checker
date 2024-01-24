@@ -1,17 +1,22 @@
-use async_std::task;
-use rcon::{AsyncStdStream, Connection, Error};
+use rcon_client::{AuthRequest, RCONClient, RCONConfig, RCONError, RCONRequest};
 use sys_info::mem_info;
 
-async fn run(address: &str, password: &str) -> Result<(), Error> {
+fn run(address: String, password: String) -> Result<(), RCONError> {
     println!("{}, {}", address, password);
     if let Ok(usage) = mem_info() {
         if usage.free < 500000 || usage.swap_free < 2000000 {
             println!("Less than 500mb");
-            let mut conn = <Connection<AsyncStdStream>>::builder()
-                .connect(address, password)
-                .await?;
+            let mut client = RCONClient::new(RCONConfig {
+                url: address,
+                // Optional
+                read_timeout: Some(13),
+                write_timeout: Some(37),
+            })?;
 
-            let player_num = check_player_num(&mut conn).await?;
+            let auth_result = client.auth(AuthRequest::new(password))?;
+            assert!(auth_result.is_success());
+
+            let player_num = check_player_num(&mut client)?;
 
             let seconds = match player_num {
                 0 => "25",
@@ -20,7 +25,7 @@ async fn run(address: &str, password: &str) -> Result<(), Error> {
 
             println!("restarting in {}s..", seconds);
 
-            shutdown_server(&mut conn, seconds).await?;
+            let _ = shutdown_server(&mut client, seconds);
         } else {
             println!("enough free memory");
         }
@@ -32,12 +37,11 @@ async fn run(address: &str, password: &str) -> Result<(), Error> {
     }
 }
 
-async fn check_player_num(conn: &mut Connection<AsyncStdStream>) -> Result<usize, Error> {
-    let resp = conn.cmd("ShowPlayers").await?;
+fn check_player_num(client: &mut RCONClient) -> Result<usize, RCONError> {
+    let resp = client.execute(RCONRequest::new("ShowPlayers".to_string()))?;
+    println!("{}", resp.body);
 
-    println!("{}", resp);
-
-    let x = resp.lines().count();
+    let x = resp.body.lines().count();
 
     let num = match x {
         0 => 0,
@@ -47,39 +51,44 @@ async fn check_player_num(conn: &mut Connection<AsyncStdStream>) -> Result<usize
     Ok(num)
 }
 
-async fn shutdown_server(conn: &mut Connection<AsyncStdStream>, time: &str) -> Result<(), Error> {
+fn shutdown_server(client: &mut RCONClient, time: &str) -> Result<(), RCONError> {
     let cmd = format!(
         "Shutdown {} 'Neustart, weil wir keinen Speicher haben'",
         time
     );
-    let resp = conn.cmd(cmd.as_str()).await?;
+    let resp = client.execute(RCONRequest::new(cmd))?;
 
-    println!("{}", resp);
+    println!("{}", resp.body);
     Ok(())
 }
 
-async fn test_check_player_num(address: &str, password: &str) -> Result<(), Error> {
-    let mut conn = <Connection<AsyncStdStream>>::builder()
-        .connect(address, password)
-        .await?;
+fn test_check_player_num(address: String, password: String) -> Result<(), RCONError> {
+    let mut client = RCONClient::new(RCONConfig {
+        url: "donkey-engine.host".to_string(),
+        // Optional
+        read_timeout: Some(13),
+        write_timeout: Some(37),
+    })?;
 
-    let player_num = check_player_num(&mut conn).await?;
+    let auth_result = client.auth(AuthRequest::new(password))?;
 
+    let player_num = check_player_num(&mut client)?;
     println!("Player num {}", player_num);
 
     Ok(())
 }
 
-fn main() -> Result<(), Error> {
+fn main() -> Result<(), RCONError> {
     let address = std::env::args().nth(1).expect("no address given");
     let password = std::env::args().nth(2).expect("no password given");
-
-    let x = task::block_on(test_check_player_num(address.as_str(), password.as_str()));
 
     if let Ok(usage) = mem_info() {
         println!("{:#?}", usage);
     }
-    println!("{:#?}", x);
+
+    let x = test_check_player_num(address, password)?;
+
+    println!("player nums {:#?}", x);
 
     //task::block_on(run(address.as_str(), password.as_str()))
 
