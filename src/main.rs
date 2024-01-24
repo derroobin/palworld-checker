@@ -4,8 +4,8 @@ use sys_info::mem_info;
 fn run(address: String, password: String) -> Result<(), RCONError> {
     println!("{}, {}", address, password);
     if let Ok(usage) = mem_info() {
-        if usage.free < 500000 || usage.swap_free < 2000000 {
-            println!("Less than 500mb");
+        if usage.free < 900000 || usage.swap_free < 2000000 {
+            println!("Less than 900mb");
             let mut client = RCONClient::new(RCONConfig {
                 url: address,
                 // Optional
@@ -79,8 +79,16 @@ fn test_check_player_num(address: String, password: String) -> Result<(), RCONEr
 }
 
 fn main() -> Result<(), RCONError> {
-    let address = std::env::args().nth(1).expect("no address given");
-    let password = std::env::args().nth(2).expect("no password given");
+    let address = std::env::args()
+        .nth(1)
+        .expect("no address given")
+        .trim()
+        .to_string();
+    let password = std::env::args()
+        .nth(2)
+        .expect("no password given")
+        .trim()
+        .to_string();
 
     if let Ok(usage) = mem_info() {
         println!("{:#?}", usage);
