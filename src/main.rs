@@ -90,6 +90,8 @@ fn main() -> Result<(), RCONError> {
         .trim()
         .to_string();
 
+    println!("{} {}", address, password);
+
     if let Ok(usage) = mem_info() {
         println!("{:#?}", usage);
     }
